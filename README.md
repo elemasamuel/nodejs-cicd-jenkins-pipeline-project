@@ -54,7 +54,7 @@ Developer Push → GitHub
 **Purpose:** the app needed its own Git repository, separate from the original template, so the team could collaborate on it directly.
 
 ```sh
-git clone https://gitlab.com/devops-bootcamp3/node-project.git
+git clone https://github.com/elemasamuel/devops-bootcamp-node-project.git
 cd node-project
 
 # remove remote repo reference
@@ -66,7 +66,7 @@ git add .
 git commit -m "Initial commit"
 
 # create the GitHub repo and point our local repo at it
-git remote add origin git@github.com:elemasamuel/devops-bootcamp-node-project.git
+git remote add origin git@github.com:elemasamuel/nodejs-cicd-jenkins-pipeline-project.git
 
 # rename master to main (GitHub's default)
 git branch -M main
@@ -117,6 +117,18 @@ Committed and pushed the `Dockerfile` to the repo.
 
 ![Jenkins credentials configured for GitHub and DockerHub](./screenshots/04-jenkins-credentials.png)
 ![Pipeline Utility Steps plugin installed](./screenshots/05-jenkins-plugin-installed.png)
+
+### 3.0 — Create the Jenkins Pipeline Job
+
+Before any of the stages below can run, Jenkins needs a job that knows where to find the code and the `Jenkinsfile`.
+
+1. Go to **Dashboard → New Item**, enter an item name (e.g. `nodejs-cicd-pipeline`), select **Pipeline**, and press **OK**.
+2. On the configuration page, go to the **Pipeline** section and select **Pipeline script from SCM**.
+3. Choose **Git** from the SCM dropdown, enter the GitHub repo URL (`https://github.com/elemasamuel/nodejs-cicd-jenkins-pipeline-project.git`), and select the GitHub credentials configured above.
+4. In **Branches to build**, enter `*/main` as the branch specifier.
+5. Set the **Script Path** to `Jenkinsfile` (the default), then press **Save**.
+
+With this in place, Jenkins pulls the `Jenkinsfile` straight from the repo on every build, so the stages below run automatically rather than being pasted into the Jenkins UI.
 
 ### 3.1 — Bump Version
 
@@ -317,4 +329,3 @@ pipeline {
 - Image versioning tied to both the app version and the Jenkins build number, so any image in the registry can be traced back to an exact commit.
 - Credential handling through Jenkins' `withCredentials` instead of hardcoded secrets.
 - Pipeline logic extracted into a Jenkins Shared Library, so it can be reused across projects instead of copy-pasted.
-
