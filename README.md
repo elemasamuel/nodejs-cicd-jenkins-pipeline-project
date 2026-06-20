@@ -100,7 +100,44 @@ You want the following steps to be included in your pipeline:
 
 **Steps to solve the tasks:**
 Step 1: Prerequisites (tools and credentials)\
-For the build pipeline we need Node and NPM to be installed in the Docker container running Jenkins. We further need credentials for accessing GitHub and DockerHub. All of these have already been installed and configured on Jenkins for [demo project 2](./demo-projects/2-create-ci-pipeline/).\
+For the build pipeline we need Node and NPM to be installed in the Docker container running Jenkins. We further need credentials for accessing GitHub and DockerHub. 
+
+### Install Jenkins as a Docker container
+
+See the [Jenkins Documentation](https://www.jenkins.io/doc/book/installing/docker/).
+
+**Create a Droplet on DigitalOcean**
+
+Login to your DigitalOcean account an create a new Droplet (4GB RAM). Jenkins needs at least 1GB RAM. Change the Droplet's name to something like 'jenkins-server' and attach a firewall rule-set to it opening port 22 for SSH from your machine's IP address and port 8080 (Type=Custom) for Jenkins from all IP addresses.
+
+SSH into the Droplet (`ssh root@<droplet-ip>`) and install Docker (since we want to run Jenkins in a Docker container):
+```sh
+apt update
+apt install docker.io
+```
+
+Start Jenkins in a Docker container:
+```sh
+docker run -p 8080:8080 -p 50000:50000 -d -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts
+# Jenkins master and worker nodes communicate over port 50000
+```
+
+Copy the initial administrator password:
+```sh
+# in the docker container
+docker exec -it <container-id> bash
+cat /var/jenkins_home/secrets/initialAdminPassword
+
+# or directly on the host
+docker volume inspect jenkins_home
+# the path is displayed as "Mountpoint" -> /var/lib/docker/volumes/jenkins_home/_data
+cat /var/lib/docker/volumes/jenkins_home/_data/secrets/initialAdminPassword
+```
+
+Open Jenkins in the browser under `http://<droplet-ip>:8080`, enter the initial administrator password and install the suggested plugins. After creating a first admin user, the initialization of Jenkins is done and the welcome screen is displayed.
+
+<img width="1897" height="956" alt="image" src="https://github.com/user-attachments/assets/447d9e62-f43d-4cf3-be85-43b6230dff45" />
+
 To read the updated version from the package.json file, we need JSON support. That's why we install the "Pipeline Utility Steps" plugin. It provieds a `readJSON` function.
 
 Now we can start writing the Jenkinsfile.
