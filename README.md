@@ -9,6 +9,8 @@ Moreover, you all decide every change should be immediately built and pushed to 
 
 For that they ask you to **set up a continuous integration pipeline**.
 
+![CI/CD Pipeline Workflow](https://github.com/user-attachments/assets/dc866c33-719e-4b6e-b8fd-a766a090f178)
+
 <details>
 <summary>Exercise 0: Create Git Repository</summary>
 <br />
