@@ -53,7 +53,7 @@ git push -u origin main
 **Tasks:**
 
 Configure your application to be built as a Docker image.
-- Dockerize your NodeJS app
+- Dockerize your NodeJS app.
 
 **Steps to solve the tasks:**\
 Step 1: Create a Dockerfile with the following content in the project root:
