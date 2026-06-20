@@ -44,6 +44,8 @@ Developer Push → GitHub
        ▼
    Manual Deploy → DigitalOcean Droplet (port 3000)
 ```
+<img width="909" height="336" alt="CI-CD-Pipeline-Workflow" src="https://github.com/user-attachments/assets/dc866c33-719e-4b6e-b8fd-a766a090f178" />
+
 
 ---
 
