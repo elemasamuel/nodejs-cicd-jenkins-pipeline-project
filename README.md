@@ -73,13 +73,14 @@ git branch -M main
 git push -u origin main
 ```
 
-![New GitHub repository with initial commit](./screenshots/01-github-repo-initial-commit.png)
+![New GitHub repository with initial commit](<img width="995" height="106" alt="image" src="https://github.com/user-attachments/assets/18cc2f6b-bae8-4511-9737-ee20fe3ae7f9" />
+)
 
 ---
 
 ## Step 2: Containerize the Application
 
-**Purpose:** the app needed to run the same way on every machine — locally, in CI, and on the production server. Docker solves that.
+**Purpose:** the app needed to run the same way on every machine locally, in CI, and on the production server. Docker solves that.
 
 ```dockerfile
 FROM node:13-alpine
@@ -100,8 +101,8 @@ CMD ["node", "server.js"]
 
 Committed and pushed the `Dockerfile` to the repo.
 
-![Dockerfile committed to the repo](./screenshots/02-dockerfile-committed.png)
-![Local docker build succeeding](./screenshots/03-docker-build-success.png)
+![Local docker build succeeding](<img width="1621" height="653" alt="image" src="https://github.com/user-attachments/assets/9bd6c69e-90f7-4812-88ca-d6a48fda7462" />
+)
 
 ---
 
@@ -109,7 +110,7 @@ Committed and pushed the `Dockerfile` to the repo.
 
 **Purpose:** this is the core of the project. Every commit needs to automatically:
 1. Bump the app's version
-2. Run the test suite — and stop immediately if anything fails
+2. Run the test suite, and stop immediately if anything fails
 3. Build a Docker image tagged with that version
 4. Push the image to Docker Hub
 5. Commit the version bump back to GitHub, so the repo always matches what's been shipped
