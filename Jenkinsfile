@@ -11,35 +11,37 @@ pipeline {
 
     stages {
         stage('Bump Version') {
-            // only execute this stage for the main branch
-            when {
-                expression {
-                    return env.GIT_BRANCH == "origin/main"
-                }
-            }
             steps {
                 script {
-                    bumpNpmVersion('app', 'patch')
+                    echo 'incrementing patch version...'
+                    dir('app') {
+                        sh 'npm version patch'
+
+                        def packageJson = readJSON file: 'package.json'
+                        def version = packageJson.version
+
+                        env.IMAGE_VERSION = "$version-$BUILD_NUMBER"
+                    }
                 }
             }
         }
         stage('Run Tests') {
-            // run the tests for every branch
             steps {
                 script {
-                    runNpmTests('app')
+                    dir('app') {
+                        sh 'npm install'
+                        sh 'npm run test'
+                    } 
                 }
             }
         }
         stage('Build and Push Docker Image') {
-            // only execute this stage for the main branch
-            when {
-                expression {
-                    return env.GIT_BRANCH == "origin/main"
-                }
-            }
             steps {
-                buildAndPublishImage("fsiegrist/fesi-repo:devops-bootcamp-node-project-${IMAGE_VERSION}")
+                withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]){
+                    sh "docker build -t elemasamuel/sam-repo:nodejs-cicd-jenkins-pipeline-project-${IMAGE_VERSION} ."
+                    sh "echo ${PASSWORD} | docker login -u ${USERNAME} --password-stdin"
+                    sh "docker push elemasamuel/sam-repo:nodejs-cicd-jenkins-pipeline-project-${IMAGE_VERSION}"
+                }
             }
         }
         stage('Deploy to EC2') {
@@ -64,15 +66,20 @@ pipeline {
             }
         }
         stage('Commit Version Update') {
-            // only execute this stage for the main branch
-            when {
-                expression {
-                    return env.GIT_BRANCH == "origin/main"
-                }
-            }
             steps {
                 script {
-                    commitAndPushVersionUpdate('github.com/fsiegrist/devops-bootcamp-node-project.git', 'GitHub', 'main')
+                    withCredentials([usernamePassword(credentialsId: 'GitHub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh 'git config user.email "jenkins@example.com"'
+                        sh 'git config user.name "jenkins"'
+        
+                        sh "git remote set-url origin https://${USERNAME}:${PASSWORD}@github.com/elemasamuel/nodejs-cicd-jenkins-pipeline-project.git"
+                        sh 'git add app/package.json'
+                        sh 'git commit -m "ci: version bump"'
+                        sh 'git push origin HEAD:main'
+        
+                        sh 'git config --unset user.email'
+                        sh 'git config --unset user.name'
+                    }
                 }
             }
         }
