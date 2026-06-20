@@ -73,8 +73,7 @@ git branch -M main
 git push -u origin main
 ```
 
-![New GitHub repository with initial commit](<img width="995" height="106" alt="image" src="https://github.com/user-attachments/assets/18cc2f6b-bae8-4511-9737-ee20fe3ae7f9" />
-)
+<img width="995" height="106" alt="image" src="https://github.com/user-attachments/assets/18cc2f6b-bae8-4511-9737-ee20fe3ae7f9" />
 
 ---
 
