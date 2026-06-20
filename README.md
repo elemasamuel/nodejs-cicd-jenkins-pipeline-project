@@ -40,6 +40,7 @@ git branch -M main
 # push your newly created local repository to it
 git push -u origin main
 ```
+![Git push command output in terminal](https://github.com/user-attachments/assets/18cc2f6b-bae8-4511-9737-ee20fe3ae7f9)
 
 </details>
 
@@ -74,6 +75,8 @@ CMD ["node", "server.js"]
 ```
 
 Commit and push the Dockerfile.
+
+![Docker image build](https://github.com/user-attachments/assets/9bd6c69e-90f7-4812-88ca-d6a48fda7462)
 
 </details>
 
