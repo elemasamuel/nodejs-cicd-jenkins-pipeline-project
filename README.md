@@ -100,8 +100,7 @@ CMD ["node", "server.js"]
 
 Committed and pushed the `Dockerfile` to the repo.
 
-![Local docker build succeeding](<img width="1621" height="653" alt="image" src="https://github.com/user-attachments/assets/9bd6c69e-90f7-4812-88ca-d6a48fda7462" />
-)
+<img width="1621" height="653" alt="image" src="https://github.com/user-attachments/assets/9bd6c69e-90f7-4812-88ca-d6a48fda7462" />
 
 ---
 
