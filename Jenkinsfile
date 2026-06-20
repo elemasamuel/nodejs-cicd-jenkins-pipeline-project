@@ -1,14 +1,5 @@
-#!/usr/bin/env groovy
-
-@Library('jenkins-shared-library')_
-
 pipeline {
     agent any
-
-    parameters {
-        booleanParam(name: 'deploy', defaultValue: true, description: 'Deploy the application on the EC2 server.') 
-    }
-
     stages {
         stage('Bump Version') {
             steps {
@@ -16,10 +7,8 @@ pipeline {
                     echo 'incrementing patch version...'
                     dir('app') {
                         sh 'npm version patch'
-
                         def packageJson = readJSON file: 'package.json'
                         def version = packageJson.version
-
                         env.IMAGE_VERSION = "$version-$BUILD_NUMBER"
                     }
                 }
@@ -41,27 +30,6 @@ pipeline {
                     sh "docker build -t elemasamuel/sam-repo:nodejs-cicd-jenkins-pipeline-project-${IMAGE_VERSION} ."
                     sh "echo ${PASSWORD} | docker login -u ${USERNAME} --password-stdin"
                     sh "docker push elemasamuel/sam-repo:nodejs-cicd-jenkins-pipeline-project-${IMAGE_VERSION}"
-                }
-            }
-        }
-        stage('Deploy to EC2') {
-            // only execute this stage for the main branch and if the respective flag is set
-            when {
-                expression {
-                    return env.GIT_BRANCH == "origin/main" && params.deploy
-                }
-            }
-            steps {
-                script {
-                    echo 'deploying Docker image to EC2 server...'
-                    
-                    def dockerComposeCmd = "IMAGE_TAG=${IMAGE_VERSION} docker-compose up -d"
-                    def ec2Instance = "ec2-user@3.122.205.189"
-
-                    sshagent(['ec2-server-key']) {
-                        sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ${ec2Instance}:/home/ec2-user"
-                        sh "ssh -o StrictHostKeyChecking=no ${ec2Instance} ${dockerComposeCmd}"
-                    }
                 }
             }
         }
