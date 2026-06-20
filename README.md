@@ -1,87 +1,60 @@
-# DevOps CI/CD Pipeline for a Node.js Application
+## Exercises
+<br />
 
-## Purpose
+Your team members want to collaborate on your NodeJS application, where you list developers with their projects. So they ask you to set up a git repository for it.
 
-This project demonstrates a complete CI/CD pipeline for a Node.js application, from source code to a running container on a live server, with no manual steps in between.
+Also, you think it's a good idea to add tests, to test that no one accidentally breaks the existing code.
 
-The scenario: a small team is building a Node.js app together. Multiple people are committing code, so there needs to be a way to guarantee that nobody's change breaks the app for everyone else, and that every approved change reaches a deployable Docker image automatically. That's what this pipeline does, it tests every change, and only builds and ships a Docker image if the tests pass.
+Moreover, you all decide every change should be immediately built and pushed to the Docker repository, so everyone can access it right away.
 
-This project demonstrates:
-- Setting up version control for a multi-developer codebase
-- Containerizing an application with Docker
-- Building a Jenkins CI/CD pipeline with automated testing as a hard gate before deployment
-- Versioning and tagging Docker images for traceability
-- Deploying a containerized app to a cloud server
-- Refactoring pipeline logic into a reusable Jenkins Shared Library
+For that they ask you to **set up a continuous integration pipeline**.
 
-**Live repo:** [devops-bootcamp-node-project](https://github.com/elemasamuel/devops-bootcamp-node-project)
-**Shared library:** [devops-bootcamp-jenkins-shared-library](https://github.com/elemasamuel/devops-bootcamp-jenkins-shared-library)
+<details>
+<summary>Exercise 0: Create Git Repository</summary>
+<br />
 
-## Tech Stack
+**Tasks:**
 
-| Category | Tools |
-|---|---|
-| Application | Node.js |
-| Version Control | Git, GitHub |
-| Containerization | Docker, Docker Hub |
-| CI/CD | Jenkins, Jenkins Shared Libraries |
-| Deployment | DigitalOcean Droplet |
-| Build Tooling | npm, Pipeline Utility Steps (Jenkins plugin) |
+- clone the git repository `https://gitlab.com/devops-bootcamp3/node-project.git`
+- create your own project/git repo from it
 
-## Pipeline at a Glance
-
-```
-Developer Push → GitHub
-       │
-       ▼
-   Jenkins Pipeline
-   ├── 1. Bump version (npm version patch)
-   ├── 2. Run automated tests (abort on failure)
-   ├── 3. Build Docker image (tagged with new version)
-   ├── 4. Push image to Docker Hub
-   └── 5. Commit & push version bump to GitHub
-       │
-       ▼
-   Manual Deploy → DigitalOcean Droplet (port 3000)
-```
-<img width="909" height="336" alt="CI-CD-Pipeline-Workflow" src="https://github.com/user-attachments/assets/dc866c33-719e-4b6e-b8fd-a766a090f178" />
-
-
----
-
-## Step 1: Set Up Version Control
-
-**Purpose:** the app needed its own Git repository, separate from the original template, so the team could collaborate on it directly.
+**Steps to solve the tasks:**
 
 ```sh
-git clone https://github.com/elemasamuel/devops-bootcamp-node-project.git
+git clone https://gitlab.com/devops-bootcamp3/node-project.git
 cd node-project
 
 # remove remote repo reference
 rm -rf .git
-
-# create our own local repository and commit its content
-git init
+# create your own local repository and commit its content
+git init 
 git add .
 git commit -m "Initial commit"
 
-# create the GitHub repo and point our local repo at it
-git remote add origin git@github.com:elemasamuel/nodejs-cicd-jenkins-pipeline-project.git
-
-# rename master to main (GitHub's default)
+# create git repository on GitHub push your newly created local repository to it
+git remote add origin git@github.com:elemasamuel/devops-bootcamp-node-project.git
+# rename master branch of original Gitlab repository to main (default on GitHub)
 git branch -M main
+# push your newly created local repository to it
 git push -u origin main
 ```
 
-<img width="995" height="106" alt="image" src="https://github.com/user-attachments/assets/18cc2f6b-bae8-4511-9737-ee20fe3ae7f9" />
+</details>
 
----
+******
 
-## Step 2: Containerize the Application
+<details>
+<summary>Exercise 1: Dockerize your NodeJS App</summary>
+<br />
 
-**Purpose:** the app needed to run the same way on every machine locally, in CI, and on the production server. Docker solves that.
+**Tasks:**
 
-```dockerfile
+Configure your application to be built as a Docker image.
+- Dockerize your NodeJS app
+
+**Steps to solve the tasks:**\
+Step 1: Create a Dockerfile with the following content in the project root:
+```sh
 FROM node:13-alpine
 
 RUN mkdir -p /usr/app
@@ -98,62 +71,63 @@ RUN npm install
 CMD ["node", "server.js"]
 ```
 
-Committed and pushed the `Dockerfile` to the repo.
+Commit and push the Dockerfile.
 
-<img width="1621" height="653" alt="image" src="https://github.com/user-attachments/assets/9bd6c69e-90f7-4812-88ca-d6a48fda7462" />
+</details>
 
----
+******
 
-## Step 3: Build the CI/CD Pipeline
+<details>
+<summary>Exercise 2: Create a full pipeline for your NodeJS App</summary>
+<br />
 
-**Purpose:** this is the core of the project. Every commit needs to automatically:
-1. Bump the app's version
-2. Run the test suite, and stop immediately if anything fails
-3. Build a Docker image tagged with that version
-4. Push the image to Docker Hub
-5. Commit the version bump back to GitHub, so the repo always matches what's been shipped
+**Tasks:**
 
-**Setup required:** Jenkins needed Node and npm installed, plus stored credentials for GitHub and Docker Hub so the pipeline could authenticate without hardcoding secrets. I also installed the **Pipeline Utility Steps** plugin for its `readJSON` function, used to read the version back out of `package.json` after it's bumped.
+You want the following steps to be included in your pipeline:
+- Increment version\
+  The application's version and docker image version should be incremented.
+- Run tests\
+  You want to test the code, to be sure to deploy only working code. When tests fail, the pipeline should abort.
+- Build docker image with incremented version
+- Push to Docker repository
+- Commit to Git\
+  The application version increment must be committed and pushed to a remote Git repository.
 
-![Jenkins credentials configured for GitHub and DockerHub](./screenshots/04-jenkins-credentials.png)
-![Pipeline Utility Steps plugin installed](./screenshots/05-jenkins-plugin-installed.png)
+**Steps to solve the tasks:**
+Step 1: Prerequisites (tools and credentials)\
+For the build pipeline we need Node and NPM to be installed in the Docker container running Jenkins. We further need credentials for accessing GitHub and DockerHub. All of these have already been installed and configured on Jenkins for [demo project 2](./demo-projects/2-create-ci-pipeline/).\
+To read the updated version from the package.json file, we need JSON support. That's why we install the "Pipeline Utility Steps" plugin. It provieds a `readJSON` function.
 
-### 3.0 — Create the Jenkins Pipeline Job
+Now we can start writing the Jenkinsfile.
 
-Before any of the stages below can run, Jenkins needs a job that knows where to find the code and the `Jenkinsfile`.
-
-1. Go to **Dashboard → New Item**, enter an item name (e.g. `nodejs-cicd-pipeline`), select **Pipeline**, and press **OK**.
-2. On the configuration page, go to the **Pipeline** section and select **Pipeline script from SCM**.
-3. Choose **Git** from the SCM dropdown, enter the GitHub repo URL (`https://github.com/elemasamuel/nodejs-cicd-jenkins-pipeline-project.git`), and select the GitHub credentials configured above.
-4. In **Branches to build**, enter `*/main` as the branch specifier.
-5. Set the **Script Path** to `Jenkinsfile` (the default), then press **Save**.
-
-With this in place, Jenkins pulls the `Jenkinsfile` straight from the repo on every build, so the stages below run automatically rather than being pasted into the Jenkins UI.
-
-### 3.1 — Bump Version
-
+Step 2: Add a stage for incrementing the application version\
+The patch version is incremented using the command `npm version patch`. To read the updated version from the package.json file, we use the `readJSON` function provided by the "Pipeline Utility Steps" plugin:
 ```groovy
-stage('Bump Version') {
-    steps {
-        script {
-            echo 'incrementing patch version...'
-            dir('app') {
-                sh 'npm version patch'
+#!/usr/bin/env groovy
 
-                def packageJson = readJSON file: 'package.json'
-                def version = packageJson.version
+pipeline {
+    agent any
+    stages {
+        stage('Bump Version') {
+            steps {
+                script {
+                    echo 'incrementing patch version...'
+                    dir('app') {
+                        sh 'npm version patch'
 
-                env.IMAGE_VERSION = "$version-$BUILD_NUMBER"
+                        def packageJson = readJSON file: 'package.json'
+                        def version = packageJson.version
+
+                        env.IMAGE_VERSION = "$version-$BUILD_NUMBER"
+                    }
+                }
             }
         }
     }
 }
 ```
 
-`npm version patch` increments the version in `package.json`. `readJSON` reads it back so it can be combined with the Jenkins build number into a unique image tag (e.g. `1.0.2-11`).
-
-### 3.2 — Run Tests
-
+Step 3: Add a stage for running the tests\
 ```groovy
 stage('Run Tests') {
     steps {
@@ -161,22 +135,17 @@ stage('Run Tests') {
             dir('app') {
                 sh 'npm install'
                 sh 'npm run test'
-            }
+            } 
         }
     }
 }
 ```
 
-This is the gate. If a test fails here, the pipeline stops — nothing gets built or pushed.
-
-![Jenkins console output showing tests passing](./screenshots/06-jenkins-tests-passing.png)
-
-### 3.3 — Build and Push Docker Image
-
+Step 4: Add a stage for building and pushing the Docker image\
 ```groovy
 stage('Build and Push Docker Image') {
     steps {
-        withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+        withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]){
             sh "docker build -t elemasamuel/fesi-repo:devops-bootcamp-node-project-${IMAGE_VERSION} ."
             sh "echo ${PASSWORD} | docker login -u ${USERNAME} --password-stdin"
             sh "docker push elemasamuel/fesi-repo:devops-bootcamp-node-project-${IMAGE_VERSION}"
@@ -185,12 +154,7 @@ stage('Build and Push Docker Image') {
 }
 ```
 
-Only runs if tests passed. Builds the image with the version tag from step 3.1, then logs in and pushes to Docker Hub using credentials stored in Jenkins, not in the code.
-
-![New image tag visible on Docker Hub](./screenshots/07-dockerhub-new-tag.png)
-
-### 3.4 — Commit Version Update
-
+Step 5: Add a stage for committing the package.json file with the incremented version\
 ```groovy
 stage('Commit Version Update') {
     steps {
@@ -212,44 +176,68 @@ stage('Commit Version Update') {
 }
 ```
 
-The version bump from step 3.1 only existed inside the Jenkins workspace until this stage commits and pushes it back to GitHub. Without this, `package.json` in the repo would drift out of sync with what's actually been built and shipped.
+</details>
 
-![Full pipeline run, all stages green](./screenshots/08-jenkins-full-pipeline-green.png)
-![Version-bump commit visible in GitHub history](./screenshots/09-github-version-bump-commit.png)
+******
 
----
+<details>
+<summary>Exercise 3: Manually deploy new Docker Image on server</summary>
+<br />
 
-## Step 4: Deploy to a Server
+**Tasks:**
 
-**Purpose:** confirm the image the pipeline produced actually runs and serves traffic, not just that it built successfully.
+After the pipeline has run successfully, you:
+- Manually deploy the new docker image on the droplet server.
 
+**Steps to solve the tasks:**
+Step 1: ssh into a DigitalOcean droplet
+
+Step 2: Execute the following commands:
 ```sh
 docker login
-# enter Docker Hub username and password
+# enter username and password for Docker-Hub
 
 docker run -p3000:3000 -d elemasamuel/fesi-repo:devops-bootcamp-node-project-1.0.2-11
 ```
 
-Opened port `3000` in the droplet's firewall, then loaded `http://<droplet-ip>:3000/` in a browser to confirm the app was live.
+Step 3: Open port 3000\
+Configure a firewall opening the port 3000 for all IP addresses.
 
-![Firewall rule opening port 3000](./screenshots/10-droplet-firewall-port-3000.png)
-![Application running live in the browser](./screenshots/11-app-live-in-browser.png)
+Step 4: Test the application\
+Open a browser and enter the URL `http://<droplet-ip>:3000/`.
 
----
+</details>
 
-## Step 5: Extract a Reusable Jenkins Shared Library
+******
 
-**Purpose:** another team wanted the same pipeline logic for a different project. Copy-pasting the `Jenkinsfile` would mean any future fix has to be repeated manually in every project that copied it. A Jenkins Shared Library solves that — the logic lives in one place and any project can call it.
+<details>
+<summary>Exercise 4: Extract into Jenkins Shared Library</summary>
+<br />
 
-| Function | Purpose |
-|---|---|
-| `bumpNpmVersion(appDir, versionPart)` | Bumps the npm package version by the given part (`patch`/`minor`/`major`) |
-| `runNpmTests(appDir)` | Installs dependencies and runs the test suite |
-| `buildAndPublishImage(imageTag)` | Builds and pushes the Docker image |
-| `commitAndPushVersionUpdate(gitRepo, credentialsId, branch)` | Commits and pushes the version bump to Git |
+**Tasks:**
 
+A colleague from another project tells you, they are building a similar Jenkins pipeline and they could use some of your logic. So you suggest creating a Jenkins Shared Library to make your Jenkinsfile code reusable and shareable.
+
+Therefore, you do the following:
+- Extract all logic into Jenkins-shared-library with parameters and reference it in Jenkinsfile.
+
+**Steps to solve the tasks:**
+We can reuse and extend the Jenkins Shared Library on [GitHub](https://github.com/elemasamuel/devops-bootcamp-jenkins-shared-library.git) created in [demo project 3](./demo-projects/3-create-shared-library/).
+
+Step 1: Extract code for the 'Bump Version' stage\
+To make the logic reusable for other node projects, we pass in two parameters:
+- the name of the directory containing the packaje.json file
+- the version-part of be incremented ('patch', 'minor' or 'major')
+
+**Note:** It would be nice to make the second parameter be an optional one with default value `patch`. But this results in an error during the build saying
+```
+Scripts not permitted to use method groovy.lang.GroovyObject invokeMethod java.lang.String java.lang.Object (org.jenkinsci.plugins.workflow.cps.CpsClosure2 bumpNpmVersion java.lang.String). Administrators can decide whether to approve or reject this signature.
+```
+It seems that optional parameters are a Groovy feature not allowed in Jenkins shared libraries.
+
+Switch to the Shared Library project and create a new file called `bumpNpmVersion.groovy` in the `vars` folder with the following content:
 ```groovy
-// vars/bumpNpmVersion.groovy
+#!/usr/bin/env groovy
 def call(String appDir, String versionPart) {
     echo "incrementing ${versionPart} version..."
     dir("${appDir}") {
@@ -263,18 +251,29 @@ def call(String appDir, String versionPart) {
 }
 ```
 
+Replace the content of the `script` block in the 'Bump Version' stage with `bumpNpmVersion('app', 'patch')`.
+
+Step 2: Extract code for the 'Run Tests' stage\
+Create a new file called `runNpmTests.groovy` in the `vars` folder with the following content:
 ```groovy
-// vars/runNpmTests.groovy
+#!/usr/bin/env groovy
 def call(String appDir) {
     dir("${appDir}") {
         sh 'npm install'
         sh 'npm run test'
-    }
+    } 
 }
 ```
 
+Replace the content of the `script` block in the 'Run Tests' stage with `runNpmTests('app')`.
+
+Step 3: Reuse shared library code for the 'Build and Push Docker Image' stage\
+The shared library function `buildAndPublishImage` we created for the demo project 3 can be reused as is. Just replace the content of the `script` block in the 'Build and Push Docker Image' stage with `buildAndPublishImage("elemasamuel/fesi-repo:devops-bootcamp-node-project-${IMAGE_VERSION}")`.
+
+Step 4: Extract code for the 'Commit Version Update' stage\
+Create a new file called `commitAndPushVersionUpdate.groovy` in the `vars` folder with the following content:
 ```groovy
-// vars/commitAndPushVersionUpdate.groovy
+#!/usr/bin/env groovy
 def call(String gitRepo, String credentialsId, String branch) {
     withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
         sh 'git config user.email "jenkins@example.com"'
@@ -291,41 +290,8 @@ def call(String gitRepo, String credentialsId, String branch) {
 }
 ```
 
-With the library in place, the `Jenkinsfile` becomes a short list of calls:
+Replace the content of the `script` block in the 'Commit Version Update' stage with `commitAndPushVersionUpdate('github.com/elemasamuel/devops-bootcamp-node-project.git', 'GitHub', 'shared-library')`. ('shared-library' is the name of the branch used for the modifications of the Jenkinsfile calling shared library functions.)
 
-```groovy
-#!/usr/bin/env groovy
+</details>
 
-pipeline {
-    agent any
-    stages {
-        stage('Bump Version') {
-            steps { script { bumpNpmVersion('app', 'patch') } }
-        }
-        stage('Run Tests') {
-            steps { script { runNpmTests('app') } }
-        }
-        stage('Build and Push Docker Image') {
-            steps { script { buildAndPublishImage("elemasamuel/fesi-repo:devops-bootcamp-node-project-${IMAGE_VERSION}") } }
-        }
-        stage('Commit Version Update') {
-            steps { script { commitAndPushVersionUpdate('github.com/elemasamuel/devops-bootcamp-node-project.git', 'GitHub', 'shared-library') } }
-        }
-    }
-}
-```
-
-**Issue encountered:** I wanted `versionPart` to default to `'patch'` so callers could omit it. Jenkins shared libraries don't support Groovy default parameter values, it throws a script-approval error (`Scripts not permitted to use method ... invokeMethod ...`). Every call site passes all parameters explicitly instead.
-
-![Jenkinsfile referencing the shared library](./screenshots/12-jenkinsfile-shared-library-calls.png)
-![Shared library repo structure](./screenshots/13-shared-library-repo-structure.png)
-![Pipeline running successfully using the shared library](./screenshots/14-shared-library-pipeline-green.png)
-
----
-
-## What This Demonstrates
-
-- A CI/CD pipeline where automated tests act as a real gate, not a formality — failing tests stop the build before anything reaches Docker Hub.
-- Image versioning tied to both the app version and the Jenkins build number, so any image in the registry can be traced back to an exact commit.
-- Credential handling through Jenkins' `withCredentials` instead of hardcoded secrets.
-- Pipeline logic extracted into a Jenkins Shared Library, so it can be reused across projects instead of copy-pasted.
+******
