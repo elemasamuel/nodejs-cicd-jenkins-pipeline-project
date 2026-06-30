@@ -40,7 +40,7 @@ pipeline {
                     echo 'deploying Docker image to EC2 server...'
                     
                     def dockerComposeCmd = "IMAGE_TAG=${IMAGE_VERSION} docker-compose up -d"
-                    def ec2Instance = "ec2-user@3.122.205.189"
+                    def ec2Instance = "ec2-user@52.29.27.47"
 
                     sshagent(['ec2-server-key']) {
                         sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ${ec2Instance}:/home/ec2-user"
