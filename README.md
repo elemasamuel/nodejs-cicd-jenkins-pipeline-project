@@ -202,11 +202,47 @@ sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/
 sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
 ```
 
-The latest Jenkins release requires Java 21, which Amazon Linux's default repos don't offer (they top out at Java 17). Instead of chasing Java 21 down through a third-party repo, I installed a Jenkins LTS version that still supports Java 17:
+I tried installing Jenkins straight away, but it refused to start, the latest release requires Java 21, and Amazon Linux's default repos only go up to Java 17:
+
+```
+Running with Java 17 from /usr/lib/jvm/java-17-amazon-corretto.x86_64, which is older than the minimum required version (Java 21).
+```
+
+My first instinct was to dodge this by installing an older Jenkins LTS version that still supports Java 17. That got Jenkins running, but it backfired later: the plugins available today are built for newer Jenkins versions, so plugin installs kept failing with dependency errors like "Jenkins 2.492.1 or higher required." So the real fix was getting Java 21 properly installed instead of working around it.
+
+Amazon Linux's own repos don't carry Java 21, but Amazon's separate Corretto repo does:
 
 ```sh
-sudo yum install -y java-17-amazon-corretto
-sudo yum install -y https://get.jenkins.io/redhat-stable/jenkins-2.426.1-1.1.noarch.rpm
+sudo rpm --import https://yum.corretto.aws/corretto.key
+sudo curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo
+```
+
+I checked what that repo actually offers before guessing a package name:
+
+```sh
+sudo yum repolist
+sudo yum list available --disablerepo="*" --enablerepo="AmazonCorretto"
+```
+
+It turned out the package is named `java-21-amazon-corretto-devel`, not the plain `java-21-amazon-corretto` I'd assumed:
+
+```sh
+sudo yum install -y java-21-amazon-corretto-devel
+```
+
+With both Java 17 and Java 21 now installed side by side, I had to explicitly tell the system to use 21:
+
+```sh
+sudo alternatives --config java
+```
+
+This lists the installed versions with a number next to each, I picked the one pointing at `java-21-amazon-corretto`.
+
+With Java 21 in place, I removed the old Jenkins LTS package and installed the current Jenkins release, which now starts cleanly:
+
+```sh
+sudo yum remove -y jenkins
+sudo yum install -y jenkins
 ```
 
 I learned the hard way that Jenkins's built-in disk space monitor checks `/tmp`, which is a small partition by default on this instance type, often under 500MB. Since that's smaller than Jenkins's 1GB threshold, my build node kept getting marked offline before the pipeline could even run. I resized it before starting Jenkins this time, so I wouldn't hit that again:
