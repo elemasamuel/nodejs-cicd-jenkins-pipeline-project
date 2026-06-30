@@ -194,25 +194,49 @@ aws ec2 authorize-security-group-ingress \
   --cidr 0.0.0.0/0
 ```
 
-On the server:
+On the server, add the Jenkins package repo first:
 
 ```sh
 sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
 sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+```
 
+The latest Jenkins release requires Java 21, which Amazon Linux's default repos don't offer (they top out at Java 17). Rather than chasing Java 21 down through a third-party repo, install a Jenkins LTS version that still supports Java 17:
+
+```sh
 sudo yum install -y java-17-amazon-corretto
-sudo yum install -y jenkins
+sudo yum install -y https://get.jenkins.io/redhat-stable/jenkins-2.426.1-1.1.noarch.rpm
+```
 
+Jenkins's built-in disk space monitor checks `/tmp`, which is a small partition by default on this instance type, often under 500MB. If it's smaller than Jenkins's 1GB threshold, the build node gets marked offline before the pipeline can even run. Resize it now, before starting Jenkins, so this never comes up:
+
+```sh
+sudo mount -o remount,size=2G /tmp
+```
+
+The pipeline also runs shell commands against `git`, `node`, and `npm` directly on this server, and runs `docker build`/`docker push` as the Jenkins system user, so all of that needs to be in place before the first build:
+
+```sh
+sudo yum install -y git
+
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo yum install -y nodejs
+
+sudo usermod -aG docker jenkins
+```
+
+Now start Jenkins:
+
+```sh
 sudo systemctl start jenkins
 sudo systemctl enable jenkins
 ```
 
-A few practical notes from getting this running:
+Since the `jenkins` user was just added to the `docker` group, restart the service once so that membership actually takes effect:
 
-- Modern Jenkins requires Java 21, which isn't available through the default Amazon Linux repos. Installing Jenkins 2.426.1, an LTS release that still supports Java 17, avoids that problem entirely.
-- The server's `/tmp` partition is small by default and can trip Jenkins's built-in disk space monitor, which takes the build node offline. Resizing it fixes this: `sudo mount -o remount,size=2G /tmp`.
-- Jenkins needs `git` and `node`/`npm` installed directly on the server, since the pipeline runs shell commands against them.
-- The Jenkins system user also needs to be added to the `docker` group, the same way `ec2-user` was, so it can run `docker build` and `docker push`.
+```sh
+sudo systemctl restart jenkins
+```
 
 Once Jenkins is up, grab the initial admin password and finish the setup wizard in the browser:
 
