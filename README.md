@@ -250,17 +250,58 @@ http://<public-ip>:8080
 
 ---
 
+<img width="1897" height="908" alt="image" src="https://github.com/user-attachments/assets/a57c48dd-9ad6-4b2d-bf09-8e89ddba3c5b" />
+
+
 ## Step 8: Reconnect my pipeline
 
-Since this was a fresh Jenkins instance, I had to set up the credentials, shared library, and pipeline job from my earlier exercises again.
+Since this was a fresh Jenkins instance, none of the credentials, plugins, shared library, or pipeline job from my earlier exercises existed here yet. I had to set each of them up again.
 
-- I added an SSH credential (ID `ec2-server-key`) with my EC2 key pair, so Jenkins could connect to the server
-- I added a DockerHub credential (ID `DockerHub`) and a GitHub credential (ID `GitHub`, using a personal access token)
-- I registered my shared library under **Manage Jenkins → System → Global Pipeline Libraries**
-- I recreated my pipeline job, pointing it at my project's GitHub repo
-- I installed the plugins my pipeline depends on: **Pipeline Utility Steps** (for `readJSON`) and **SSH Agent** (for `sshagent`)
+**Add the SSH credential for the EC2 server:**
 
-My Jenkinsfile's deploy stage copies the compose file to the server and starts the container:
+1. **Manage Jenkins → Credentials → (global) → Add Credentials**
+2. **Kind**: SSH Username with private key
+3. **ID**: `ec2-server-key`
+4. **Username**: `ec2-user`
+5. **Private Key → Enter directly**, then I pasted the full contents of `WebServerKeyPair.pem` (run `cat WebServerKeyPair.pem` locally to get it)
+6. Save
+
+**Add the DockerHub and GitHub credentials:**
+
+1. **Manage Jenkins → Credentials → (global) → Add Credentials**
+2. **Kind**: Username with password
+3. For DockerHub: **Username** is my DockerHub username, **Password** is a DockerHub access token, **ID**: `DockerHub`
+4. For GitHub: **Username** is my GitHub username, **Password** is a GitHub personal access token (generated under **Settings → Developer settings → Personal access tokens**, with the `repo` scope), **ID**: `GitHub`
+
+**Install the plugins the pipeline depends on:**
+
+1. **Manage Jenkins → Plugins → Available plugins**
+2. I searched for and installed **Pipeline Utility Steps** (provides `readJSON`, used when bumping the version)
+3. I searched for and installed **SSH Agent** (provides `sshagent`, used in the deploy stage)
+
+**Register the shared library:**
+
+1. **Manage Jenkins → System → Global Pipeline Libraries → Add**
+2. **Name**: `jenkins-shared-library` (has to match exactly what the Jenkinsfile calls)
+3. **Default version**: `main`
+4. **Retrieval method**: Modern SCM → Git
+5. **Project Repository**: my shared library repo's HTTPS URL
+6. **Credentials**: `GitHub`
+7. Save
+
+**Recreate the pipeline job:**
+
+1. Jenkins dashboard → **New Item**
+2. I named it `node-project-pipeline`, selected **Pipeline**, clicked OK
+3. Under **Pipeline**, I set Definition to **Pipeline script from SCM**
+4. **SCM**: Git
+5. **Repository URL**: my project repo's HTTPS URL
+6. **Credentials**: `GitHub` (not strictly needed since the repo is public, but useful if it ever becomes private)
+7. **Branch Specifier**: `*/main`
+8. **Script Path**: `Jenkinsfile`
+9. Save
+
+With all of that in place, the deploy stage in my Jenkinsfile copies the compose file to the server and starts the container:
 
 ```groovy
 stage('Deploy to EC2') {
@@ -283,6 +324,9 @@ stage('Deploy to EC2') {
         }
     }
 }
+
+<img width="1881" height="442" alt="image" src="https://github.com/user-attachments/assets/d5103920-6124-4d7d-bed7-401bfd00f83f" />
+
 ```
 
 ---
@@ -302,6 +346,8 @@ http://<public-ip>:3000
 ```
 
 ---
+<img width="1900" height="956" alt="image" src="https://github.com/user-attachments/assets/bd16325e-55e9-4ff3-9908-355e93fc6dff" />
+
 
 ## Step 10: Restrict deployment to the main branch, and trigger automatically
 
@@ -380,6 +426,8 @@ pipeline {
     }
 }
 ```
+<img width="1881" height="903" alt="image" src="https://github.com/user-attachments/assets/bcf15277-b16c-4562-b62b-495f65883688" />
+
 
 Then I wired up the webhook so pushes would trigger Jenkins automatically, instead of me clicking **Build Now** every time:
 
@@ -392,16 +440,7 @@ In Jenkins, I opened the pipeline job's configuration, scrolled to **Build Trigg
 To stop Jenkins from triggering a build on its own automatic version-bump commits, I added an extra Git behavior under **Additional Behaviours**: **Polling ignores commits from certain users**, with the username `jenkins`.
 
 ---
-
-## A note on the commit-back stage
-
-My "Commit Version Update" stage pushes the version bump in `package.json` back to GitHub after every build. Because my Jenkins workspace and GitHub's history drifted apart over many builds, especially after re-running the pipeline several times while debugging, this push kept getting rejected. Since the stage only ever touches that one file and nothing else relies on a clean merge history, I fixed it by pushing with `--force` in my shared library function:
-
-```groovy
-sh "git push --force origin HEAD:${branch}"
-```
-
----
+<img width="1883" height="905" alt="image" src="https://github.com/user-attachments/assets/8658b717-10b6-402e-aaf0-72aeed1972b1" />
 
 ## Verifying everything works end to end
 
