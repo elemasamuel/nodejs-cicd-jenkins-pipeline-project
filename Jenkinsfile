@@ -1,14 +1,33 @@
+#!/usr/bin/env groovy
+
+library('jenkins-shared-library')
+
 pipeline {
     agent any
-
     parameters {
         booleanParam(name: 'deploy', defaultValue: true, description: 'Deploy the application on the EC2 server.') 
     }
-
     stages {
-        ...
+        stage('Bump Version') {
+            steps {
+                script {
+                    bumpNpmVersion('app', 'patch')
+                }
+            }
+        }
+        stage('Run Tests') {
+            steps {
+                script {
+                    runNpmTests('app')
+                }
+            }
+        }
         stage('Build and Push Docker Image') {
-            ...
+            steps {
+                script {
+                    buildAndPublishImage("elemasamuel/sam-repo:nodejs-cicd-jenkins-pipeline-project-${IMAGE_VERSION}")
+                }
+            }
         }
         stage('Deploy to EC2') {
             when {
@@ -31,7 +50,11 @@ pipeline {
             }
         }
         stage('Commit Version Update') {
-            ...
+            steps {
+                script {
+                    commitAndPushVersionUpdate('github.com/elemasamuel/nodejs-cicd-jenkins-pipeline-project.git', 'GitHub', 'main')
+                }
+            }
         }
     }
 }
