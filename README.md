@@ -479,9 +479,9 @@ To stop Jenkins from triggering a build on its own automatic version-bump commit
 ---
 <img width="1883" height="905" alt="image" src="https://github.com/user-attachments/assets/8658b717-10b6-402e-aaf0-72aeed1972b1" />
 
-## Verifying everything works end to end
+## So the full picture is
 
-1. I pushed a change to a feature branch, and confirmed only the **Run Tests** stage ran
-2. I pushed a change to `main`, and confirmed the full pipeline ran: version bump, tests, Docker build and push, deploy to EC2, and the version commit
-3. I confirmed the new build triggered automatically in Jenkins within seconds of the push, with no manual **Build Now** needed
-4. I opened `http://<public-ip>:3000` and confirmed the latest version of the app was live
+1. **GitHub** stores the code and triggers the pipeline on every push.
+2. **Jenkins** receives that trigger, runs the pipeline, builds the Docker image, and orchestrates everything.
+3. **DockerHub** stores the built image, versioned and ready to be pulled.
+4. **EC2** pulls the image from DockerHub, runs it as a container, and serves the actual website.
