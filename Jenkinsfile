@@ -1,7 +1,5 @@
 #!/usr/bin/env groovy
-
 library('jenkins-shared-library')
-
 pipeline {
     agent any
     parameters {
@@ -9,6 +7,11 @@ pipeline {
     }
     stages {
         stage('Bump Version') {
+            when {
+                expression {
+                    return env.GIT_BRANCH == "origin/main"
+                }
+            }
             steps {
                 script {
                     bumpNpmVersion('app', 'patch')
@@ -23,6 +26,11 @@ pipeline {
             }
         }
         stage('Build and Push Docker Image') {
+            when {
+                expression {
+                    return env.GIT_BRANCH == "origin/main"
+                }
+            }
             steps {
                 script {
                     buildAndPublishImage("elemasamuel/sam-repo:nodejs-cicd-jenkins-pipeline-project-${IMAGE_VERSION}")
@@ -32,16 +40,14 @@ pipeline {
         stage('Deploy to EC2') {
             when {
                 expression {
-                    params.deploy
+                    return env.GIT_BRANCH == "origin/main" && params.deploy
                 }
             }
             steps {
                 script {
                     echo 'deploying Docker image to EC2 server...'
-                    
                     def dockerComposeCmd = "IMAGE_TAG=${IMAGE_VERSION} docker-compose up -d"
                     def ec2Instance = "ec2-user@52.29.27.47"
-
                     sshagent(['ec2-server-key']) {
                         sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ${ec2Instance}:/home/ec2-user"
                         sh "ssh -o StrictHostKeyChecking=no ${ec2Instance} ${dockerComposeCmd}"
@@ -50,6 +56,11 @@ pipeline {
             }
         }
         stage('Commit Version Update') {
+            when {
+                expression {
+                    return env.GIT_BRANCH == "origin/main"
+                }
+            }
             steps {
                 script {
                     commitAndPushVersionUpdate('github.com/elemasamuel/nodejs-cicd-jenkins-pipeline-project.git', 'GitHub', 'main')
